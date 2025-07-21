@@ -1,17 +1,16 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const { config: dotenvConfig } = require('dotenv');
-import { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import { config } from 'dotenv';
 
 // Importar rotas
-const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
-const tweetRoutes = require('./routes/tweetRoutes');
+import authRoutes from './routes/authRoutes';
+import userRoutes from './routes/userRoutes';
+import tweetRoutes from './routes/tweetRoutes';
 
 // Configurar variáveis de ambiente
-dotenvConfig();
+config();
 
 const app = express();
 
@@ -49,4 +48,4 @@ app.use((error: any, req: Request, res: Response, next: NextFunction) => {
   res.status(500).json({ error: 'Erro interno do servidor' });
 });
 
-module.exports = app;
+export default app;

@@ -9,4 +9,4 @@ router.post('/register', AuthController.register);
 // POST /auth/login - Fazer login
 router.post('/login', AuthController.login);
 
-module.exports = router;
+export default router;

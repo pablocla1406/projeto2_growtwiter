@@ -16,4 +16,4 @@ router.post('/:id/follow', UserController.followUser);
 // DELETE /users/:id/follow - Deixar de seguir um usuário
 router.delete('/:id/follow', UserController.unfollowUser);
 
-module.exports = router;
+export default router;

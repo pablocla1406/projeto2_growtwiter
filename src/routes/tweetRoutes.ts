@@ -22,4 +22,4 @@ router.post('/:id/like', TweetController.likeTweet);
 // DELETE /tweets/:id/like - Remover like de um tweet
 router.delete('/:id/like', TweetController.unlikeTweet);
 
-module.exports = router;
+export default router;
