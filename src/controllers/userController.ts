@@ -96,8 +96,8 @@ export class UserController {
       res.json({
         user: {
           ...user,
-          followers: user.followers.map(f => f.follower),
-          following: user.following.map(f => f.following)
+          followers: user.followers.map((f: any) => f.follower),
+          following: user.following.map((f: any) => f.following)
         }
       });
     } catch (error) {

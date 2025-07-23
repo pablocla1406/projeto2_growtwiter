@@ -145,7 +145,7 @@ export class TweetController {
         select: { followingId: true }
       });
 
-      const followingIds = following.map(f => f.followingId);
+      const followingIds = following.map((f: { followingId: string }) => f.followingId);
       followingIds.push(userId); // Incluir tweets do próprio usuário
 
       // Buscar tweets do feed
@@ -203,9 +203,9 @@ export class TweetController {
       });
 
       // Mapear tweets com informação se o usuário curtiu
-      const tweetsWithLikeInfo = tweets.map(tweet => ({
+      const tweetsWithLikeInfo = tweets.map((tweet: any) => ({
         ...tweet,
-        isLikedByUser: tweet.likes.some(like => like.userId === userId),
+        isLikedByUser: tweet.likes.some((like: { userId: string }) => like.userId === userId),
         likes: tweet.likes.length
       }));
 

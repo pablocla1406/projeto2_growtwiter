@@ -1,98 +1,72 @@
-# Guia de Testes - Growtwitter API
+# Guia de Testes - API Growtwitter
 
-## 🚀 Como Executar a API
+Este documento contém todas as rotas da API e exemplos de como testá-las.
 
-### 1. Configuração Inicial
+## Configuração Base
+- **Base URL**: `http://localhost:3000`
+- **Content-Type**: `application/json`
 
-#### Instalar dependências:
-```bash
-npm install
-```
-
-#### Configurar banco de dados:
-1. Copie o arquivo `.env.example` para `.env`:
-```bash
-cp .env.example .env
-```
-
-2. Configure sua string de conexão PostgreSQL no arquivo `.env`:
-```env
-DATABASE_URL="postgresql://username:password@localhost:5432/growtwitter?schema=public"
-JWT_SECRET="your-super-secret-jwt-key-here-change-in-production"
-JWT_EXPIRES_IN="7d"
-PORT=3000
-NODE_ENV="development"
-```
-
-#### Executar migrações do banco:
-```bash
-npm run prisma:migrate
-npm run prisma:generate
-```
-
-#### Iniciar a aplicação:
-```bash
-# Modo desenvolvimento (com hot reload)
-npm run dev
-
-# Ou modo produção
-npm run build
-npm start
-```
-
-A API estará rodando em: `http://localhost:3000`
+## 📋 Índice
+1. [Autenticação](#autenticação)
+2. [Usuários](#usuários)
+3. [Tweets](#tweets)
 
 ---
 
-## 🧪 Testes das Rotas
+## 🔐 Autenticação
 
-### Base URL: `http://localhost:3000`
-
-## 1. Cadastrar Usuário
+### 1. Registrar Usuário
 **POST** `/auth/register`
 
+**Exemplo de Request:**
 ```json
 {
   "name": "João Silva",
   "username": "joaosilva",
   "email": "joao@email.com",
-  "password": "123456",
-  "profileImage": "https://example.com/avatar.jpg"
+  "password": "minhasenha123"
 }
 ```
 
-**Resposta esperada:**
-```json
-{
-  "message": "Usuário criado com sucesso",
-  "user": {
-    "id": "user_id",
+**Como testar no cURL:**
+```bash
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
     "name": "João Silva",
     "username": "joaosilva",
     "email": "joao@email.com",
-    "profileImage": "https://example.com/avatar.jpg",
-    "createdAt": "2025-06-24T..."
-  }
-}
+    "password": "minhasenha123"
+  }'
 ```
 
-## 2. Login
+### 2. Login
 **POST** `/auth/login`
 
+**Exemplo de Request:**
 ```json
 {
   "email": "joao@email.com",
-  "password": "123456"
+  "password": "minhasenha123"
 }
+```
+
+**Como testar no cURL:**
+```bash
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "joao@email.com",
+    "password": "minhasenha123"
+  }'
 ```
 
 **Resposta esperada:**
 ```json
 {
-  "message": "Login realizado com sucesso",
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
-    "id": "user_id",
+    "id": "1",
     "name": "João Silva",
     "username": "joaosilva",
     "email": "joao@email.com"
@@ -100,235 +74,224 @@ A API estará rodando em: `http://localhost:3000`
 }
 ```
 
-> ⚠️ **IMPORTANTE**: Copie o `token` retornado! Ele será necessário para todas as próximas requisições.
+⚠️ **IMPORTANTE**: Salve o token retornado! Você precisará dele para todas as outras rotas.
 
 ---
 
-## 🔐 Rotas com Autenticação
+## 👤 Usuários
+*Todas as rotas de usuário requerem autenticação*
 
-Para todas as rotas abaixo, adicione o header:
-```
-Authorization: Bearer SEU_TOKEN_AQUI
-```
-
-## 3. Obter Dados de um Usuário
+### 3. Obter Dados de um Usuário
 **GET** `/users/:id`
 
-**Resposta esperada:**
-```json
-{
-  "user": {
-    "id": "user_id",
-    "name": "João Silva",
-    "username": "joaosilva",
-    "email": "joao@email.com",
-    "profileImage": "https://example.com/avatar.jpg",
-    "createdAt": "2025-06-24T...",
-    "tweets": [...],
-    "followers": [...],
-    "following": [...],
-    "_count": {
-      "tweets": 0,
-      "followers": 0,
-      "following": 0
-    }
-  }
-}
+**Como testar no cURL:**
+```bash
+curl -X GET http://localhost:3000/users/1 \
+  -H "Authorization: Bearer SEU_TOKEN_AQUI"
 ```
 
-## 4. Criar Tweet
-**POST** `/tweets`
-
-```json
-{
-  "content": "Meu primeiro tweet no Growtwitter! 🚀"
-}
-```
-
-**Resposta esperada:**
-```json
-{
-  "message": "Tweet criado com sucesso",
-  "tweet": {
-    "id": "tweet_id",
-    "content": "Meu primeiro tweet no Growtwitter! 🚀",
-    "createdAt": "2025-06-24T...",
-    "author": {
-      "id": "user_id",
-      "name": "João Silva",
-      "username": "joaosilva",
-      "profileImage": "https://example.com/avatar.jpg"
-    },
-    "_count": {
-      "likes": 0,
-      "replies": 0
-    }
-  }
-}
-```
-
-## 5. Criar Reply
-**POST** `/tweets/:id/reply`
-
-```json
-{
-  "content": "Ótimo tweet! Concordo totalmente."
-}
-```
-
-## 6. Obter Feed
-**GET** `/tweets/feed`
-
-**Resposta esperada:**
-```json
-{
-  "feed": [
-    {
-      "id": "tweet_id",
-      "content": "Conteúdo do tweet",
-      "createdAt": "2025-06-24T...",
-      "author": {...},
-      "likes": [...],
-      "_count": {
-        "likes": 5,
-        "replies": 2
-      }
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 1
-  }
-}
-```
-
-## 7. Curtir Tweet
-**POST** `/tweets/:id/like`
-
-**Resposta esperada:**
-```json
-{
-  "message": "Tweet curtido com sucesso"
-}
-```
-
-## 8. Descurtir Tweet
-**DELETE** `/tweets/:id/like`
-
-**Resposta esperada:**
-```json
-{
-  "message": "Like removido com sucesso"
-}
-```
-
-## 9. Seguir Usuário
+### 4. Seguir um Usuário
 **POST** `/users/:id/follow`
 
-**Resposta esperada:**
-```json
-{
-  "message": "Usuário seguido com sucesso"
-}
+**Como testar no cURL:**
+```bash
+curl -X POST http://localhost:3000/users/2/follow \
+  -H "Authorization: Bearer SEU_TOKEN_AQUI"
 ```
 
-## 10. Deixar de Seguir
+### 5. Deixar de Seguir um Usuário
 **DELETE** `/users/:id/follow`
 
-**Resposta esperada:**
+**Como testar no cURL:**
+```bash
+curl -X DELETE http://localhost:3000/users/2/follow \
+  -H "Authorization: Bearer SEU_TOKEN_AQUI"
+```
+
+---
+
+## 🐦 Tweets
+*Todas as rotas de tweet requerem autenticação*
+
+### 6. Criar um Tweet
+**POST** `/tweets`
+
+**Exemplo de Request:**
 ```json
 {
-  "message": "Usuário deixou de ser seguido"
+  "content": "Meu primeiro tweet! 🎉"
 }
 ```
 
----
-
-## 🛠️ Ferramentas para Teste
-
-### 1. **Postman** (Recomendado)
-- Baixe em: https://www.postman.com/
-- Importe a collection que criei (veja arquivo `postman_collection.json`)
-
-### 2. **Thunder Client** (Extensão VS Code)
-- Instale a extensão no VS Code
-- Ideal para testar diretamente no editor
-
-### 3. **cURL** (Linha de comando)
-Exemplo de teste com cURL:
-
+**Como testar no cURL:**
 ```bash
-# 1. Registrar usuário
-curl -X POST http://localhost:3000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "João Silva",
-    "username": "joaosilva",  
-    "email": "joao@email.com",
-    "password": "123456"
-  }'
-
-# 2. Fazer login
-curl -X POST http://localhost:3000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "joao@email.com",
-    "password": "123456"
-  }'
-
-# 3. Criar tweet (substitua SEU_TOKEN)
 curl -X POST http://localhost:3000/tweets \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer SEU_TOKEN" \
+  -H "Authorization: Bearer SEU_TOKEN_AQUI" \
   -d '{
-    "content": "Meu primeiro tweet!"
+    "content": "Meu primeiro tweet! 🎉"
   }'
+```
+
+### 7. Criar uma Resposta (Reply)
+**POST** `/tweets/:id/reply`
+
+**Exemplo de Request:**
+```json
+{
+  "content": "Que legal! Parabéns pelo tweet!"
+}
+```
+
+**Como testar no cURL:**
+```bash
+curl -X POST http://localhost:3000/tweets/1/reply \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer SEU_TOKEN_AQUI" \
+  -d '{
+    "content": "Que legal! Parabéns pelo tweet!"
+  }'
+```
+
+### 8. Obter Feed do Usuário
+**GET** `/tweets/feed`
+
+**Como testar no cURL:**
+```bash
+curl -X GET http://localhost:3000/tweets/feed \
+  -H "Authorization: Bearer SEU_TOKEN_AQUI"
+```
+
+### 9. Curtir um Tweet
+**POST** `/tweets/:id/like`
+
+**Como testar no cURL:**
+```bash
+curl -X POST http://localhost:3000/tweets/1/like \
+  -H "Authorization: Bearer SEU_TOKEN_AQUI"
+```
+
+### 10. Remover Like de um Tweet
+**DELETE** `/tweets/:id/like`
+
+**Como testar no cURL:**
+```bash
+curl -X DELETE http://localhost:3000/tweets/1/like \
+  -H "Authorization: Bearer SEU_TOKEN_AQUI"
 ```
 
 ---
 
-## ✅ Checklist de Testes
+## 🧪 Fluxo de Teste Completo
 
-- [ ] Cadastrar usuário
-- [ ] Fazer login
-- [ ] Obter dados do usuário
-- [ ] Criar tweet
-- [ ] Criar reply
-- [ ] Obter feed
-- [ ] Curtir tweet
-- [ ] Descurtir tweet
-- [ ] Seguir usuário
-- [ ] Deixar de seguir usuário
-
----
-
-## 🐛 Resolução de Problemas
-
-### Erro de conexão com banco:
-- Verifique se o PostgreSQL está rodando
-- Confirme a string de conexão no `.env`
-- Execute as migrações: `npm run prisma:migrate`
-
-### Erro 401 (Unauthorized):
-- Verifique se o token JWT está sendo enviado no header
-- Confirme se o token não expirou
-
-### Erro 404 (Not Found):
-- Verifique se a URL está correta
-- Confirme se o ID do usuário/tweet existe
-
-### Para ver logs detalhados:
+### Passo 1: Iniciar o servidor
 ```bash
 npm run dev
 ```
 
+### Passo 2: Registrar dois usuários
+```bash
+# Usuário 1
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "João Silva",
+    "username": "joaosilva",
+    "email": "joao@email.com",
+    "password": "senha123"
+  }'
+
+# Usuário 2
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Maria Santos",
+    "username": "mariasantos",
+    "email": "maria@email.com",
+    "password": "senha123"
+  }'
+```
+
+### Passo 3: Fazer login e obter tokens
+```bash
+# Login do João
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "joao@email.com",
+    "password": "senha123"
+  }'
+```
+
+### Passo 4: Testar funcionalidades
+1. Criar tweets
+2. Seguir usuários
+3. Curtir tweets
+4. Criar replies
+5. Ver feed
+
 ---
 
-## 🎯 Próximos Passos
+## 🛠️ Testando com Postman
 
-1. Execute todos os testes básicos
-2. Teste cenários de erro (dados inválidos, usuários inexistentes, etc.)
-3. Teste a paginação do feed
-4. Verifique as validações de entrada
-5. Teste com múltiplos usuários para simular interações reais
+### Configuração do Environment:
+- **base_url**: `http://localhost:3000`
+- **token**: (será preenchido após o login)
+
+### Headers para rotas autenticadas:
+- **Authorization**: `Bearer {{token}}`
+- **Content-Type**: `application/json`
+
+---
+
+## ❌ Códigos de Erro Comuns
+
+- **400**: Bad Request - Dados inválidos
+- **401**: Unauthorized - Token inválido ou ausente
+- **404**: Not Found - Recurso não encontrado
+- **409**: Conflict - Recurso já existe (ex: email já cadastrado)
+- **500**: Internal Server Error - Erro interno do servidor
+
+---
+
+## 📝 Notas Importantes
+
+1. **Token JWT**: Expira em 7 dias. Depois disso, faça login novamente.
+2. **IDs**: Os IDs dos usuários e tweets são gerados automaticamente.
+3. **Validações**: A API valida todos os dados de entrada.
+4. **Seguir a si mesmo**: Não é permitido seguir a si mesmo.
+5. **Curtir o próprio tweet**: É permitido curtir seus próprios tweets.
+
+---
+
+## 🔄 Exemplos de Resposta
+
+### Sucesso ao criar tweet:
+```json
+{
+  "id": "1",
+  "content": "Meu primeiro tweet! 🎉",
+  "authorId": "1",
+  "createdAt": "2025-07-23T10:30:00.000Z"
+}
+```
+
+### Feed do usuário:
+```json
+{
+  "tweets": [
+    {
+      "id": "1",
+      "content": "Meu primeiro tweet! 🎉",
+      "author": {
+        "id": "1",
+        "name": "João Silva",
+        "username": "joaosilva"
+      },
+      "createdAt": "2025-07-23T10:30:00.000Z",
+      "likes": 5,
+      "replies": 2
+    }
+  ]
+}
+```
