@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from '../utils/prisma';
-import { AuthUtils } from '../utils/auth';
+import { AuthService } from '../services/authService';
 
 export class AuthController {
   // Cadastrar novo usuário
@@ -14,51 +13,23 @@ export class AuthController {
         return;
       }
 
-      // Verificar se username ou email já existem
-      const existingUser = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { username },
-            { email }
-          ]
-        }
-      });
-
-      if (existingUser) {
-        res.status(409).json({ error: 'Username ou email já estão em uso' });
-        return;
-      }
-
-      // Hash da senha
-      const hashedPassword = await AuthUtils.hashPassword(password);
-
-      // Criar usuário
-      const user = await prisma.user.create({
-        data: {
-          name,
-          username,
-          email,
-          password: hashedPassword
-        },
-        select: {
-          id: true,
-          name: true,
-          username: true,
-          email: true,
-          createdAt: true
-        }
-      });
-
-      // Gerar token
-      const token = AuthUtils.generateToken(user.id);
+      const result = await AuthService.register({ name, username, email, password });
 
       res.status(201).json({
         message: 'Usuário criado com sucesso',
-        user,
-        token
+        user: result.user,
+        token: result.token
       });
     } catch (error) {
       console.error('Erro ao registrar usuário:', error);
+      
+      if (error instanceof Error) {
+        if (error.message === 'Username ou email já estão em uso') {
+          res.status(409).json({ error: error.message });
+          return;
+        }
+      }
+      
       res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
@@ -74,45 +45,23 @@ export class AuthController {
         return;
       }
 
-      // Buscar usuário por username ou email
-      const user = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { username: login },
-            { email: login }
-          ]
-        }
-      });
-
-      if (!user) {
-        res.status(401).json({ error: 'Credenciais inválidas' });
-        return;
-      }
-
-      // Verificar senha
-      const isPasswordValid = await AuthUtils.comparePassword(password, user.password);
-
-      if (!isPasswordValid) {
-        res.status(401).json({ error: 'Credenciais inválidas' });
-        return;
-      }
-
-      // Gerar token
-      const token = AuthUtils.generateToken(user.id);
+      const result = await AuthService.login({ login, password });
 
       res.json({
         message: 'Login realizado com sucesso',
-        user: {
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          email: user.email,
-          createdAt: user.createdAt
-        },
-        token
+        user: result.user,
+        token: result.token
       });
     } catch (error) {
       console.error('Erro ao fazer login:', error);
+      
+      if (error instanceof Error) {
+        if (error.message === 'Credenciais inválidas') {
+          res.status(401).json({ error: error.message });
+          return;
+        }
+      }
+      
       res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }

@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { prisma } from '../utils/prisma';
+import { UserService } from '../services/userService';
 import { AuthenticatedRequest } from '../middlewares/auth';
 
 export class UserController {
@@ -15,74 +15,14 @@ export class UserController {
         return;
       }
 
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          name: true,
-          username: true,
-          email: true,
-          createdAt: true,
-          tweets: {
-            select: {
-              id: true,
-              content: true,
-              createdAt: true,
-              _count: {
-                select: {
-                  likes: true,
-                  replies: true
-                }
-              }
-            },
-            orderBy: {
-              createdAt: 'desc'
-            }
-          },
-          followers: {
-            select: {
-              follower: {
-                select: {
-                  id: true,
-                  name: true,
-                  username: true
-                }
-              }
-            }
-          },
-          following: {
-            select: {
-              following: {
-                select: {
-                  id: true,
-                  name: true,
-                  username: true
-                }
-              }
-            }
-          },
-          _count: {
-            select: {
-              tweets: true,
-              followers: true,
-              following: true
-            }
-          }
-        }
-      });
+      const user = await UserService.getUserById(userId);
 
       if (!user) {
         res.status(404).json({ error: 'Usuário não encontrado' });
         return;
       }
 
-      res.json({
-        user: {
-          ...user,
-          followers: user.followers.map((f: any) => f.follower),
-          following: user.following.map((f: any) => f.following)
-        }
-      });
+      res.json({ user });
     } catch (error) {
       console.error('Erro ao buscar usuário:', error);
       res.status(500).json({ error: 'Erro interno do servidor' });
@@ -102,48 +42,27 @@ export class UserController {
         return;
       }
 
-      // Verificar se não está tentando seguir a si mesmo
-      if (followerId === followingUserId) {
-        res.status(400).json({ error: 'Você não pode seguir a si mesmo' });
-        return;
-      }
-
-      // Verificar se o usuário a ser seguido existe
-      const userToFollow = await prisma.user.findUnique({
-        where: { id: followingUserId }
-      });
-
-      if (!userToFollow) {
-        res.status(404).json({ error: 'Usuário não encontrado' });
-        return;
-      }
-
-      // Verificar se já está seguindo
-      const existingFollow = await prisma.follow.findUnique({
-        where: {
-          followerId_followingId: {
-            followerId,
-            followingId: followingUserId
-          }
-        }
-      });
-
-      if (existingFollow) {
-        res.status(409).json({ error: 'Você já está seguindo este usuário' });
-        return;
-      }
-
-      // Criar o relacionamento de seguir
-      await prisma.follow.create({
-        data: {
-          followerId,
-          followingId: followingUserId
-        }
-      });
+      await UserService.followUser(followerId, followingUserId);
 
       res.status(201).json({ message: 'Usuário seguido com sucesso' });
     } catch (error) {
       console.error('Erro ao seguir usuário:', error);
+      
+      if (error instanceof Error) {
+        if (error.message === 'Você não pode seguir a si mesmo') {
+          res.status(400).json({ error: error.message });
+          return;
+        }
+        if (error.message === 'Usuário não encontrado') {
+          res.status(404).json({ error: error.message });
+          return;
+        }
+        if (error.message === 'Você já está seguindo este usuário') {
+          res.status(409).json({ error: error.message });
+          return;
+        }
+      }
+      
       res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
@@ -161,34 +80,19 @@ export class UserController {
         return;
       }
 
-      // Verificar se o relacionamento existe
-      const existingFollow = await prisma.follow.findUnique({
-        where: {
-          followerId_followingId: {
-            followerId,
-            followingId: followingUserId
-          }
-        }
-      });
-
-      if (!existingFollow) {
-        res.status(404).json({ error: 'Você não está seguindo este usuário' });
-        return;
-      }
-
-      // Remover o relacionamento
-      await prisma.follow.delete({
-        where: {
-          followerId_followingId: {
-            followerId,
-            followingId: followingUserId
-          }
-        }
-      });
+      await UserService.unfollowUser(followerId, followingUserId);
 
       res.json({ message: 'Você deixou de seguir este usuário' });
     } catch (error) {
       console.error('Erro ao deixar de seguir usuário:', error);
+      
+      if (error instanceof Error) {
+        if (error.message === 'Você não está seguindo este usuário') {
+          res.status(404).json({ error: error.message });
+          return;
+        }
+      }
+      
       res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
