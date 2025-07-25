@@ -31,8 +31,7 @@ export class TweetController {
             select: {
               id: true,
               name: true,
-              username: true,
-              profileImage: true
+              username: true
             }
           },
           _count: {
@@ -44,9 +43,18 @@ export class TweetController {
         }
       });
 
+      const response = {
+        id: tweet.id,
+        content: tweet.content,
+        author: tweet.author,
+        createdAt: tweet.createdAt,
+        likes: tweet._count.likes,
+        replies: tweet._count.replies
+      };
+
       res.status(201).json({
         message: 'Tweet criado com sucesso',
-        tweet
+        tweet: response
       });
     } catch (error) {
       console.error('Erro ao criar tweet:', error);
@@ -59,7 +67,14 @@ export class TweetController {
     try {
       const { content } = req.body;
       const { id: parentId } = req.params;
+      const parentTweetId = parseInt(parentId, 10);
       const authorId = req.userId!;
+
+      // Validação do ID
+      if (isNaN(parentTweetId)) {
+        res.status(400).json({ error: 'ID do tweet pai inválido' });
+        return;
+      }
 
       // Validações básicas
       if (!content || content.trim().length === 0) {
@@ -74,7 +89,7 @@ export class TweetController {
 
       // Verificar se o tweet pai existe
       const parentTweet = await prisma.tweet.findUnique({
-        where: { id: parentId }
+        where: { id: parentTweetId }
       });
 
       if (!parentTweet) {
@@ -87,15 +102,14 @@ export class TweetController {
         data: {
           content: content.trim(),
           authorId,
-          parentId
+          parentId: parentTweetId
         },
         include: {
           author: {
             select: {
               id: true,
               name: true,
-              username: true,
-              profileImage: true
+              username: true
             }
           },
           parent: {
@@ -106,8 +120,7 @@ export class TweetController {
                 select: {
                   id: true,
                   name: true,
-                  username: true,
-                  profileImage: true
+                  username: true
                 }
               }
             }
@@ -121,9 +134,19 @@ export class TweetController {
         }
       });
 
+      const response = {
+        id: reply.id,
+        content: reply.content,
+        author: reply.author,
+        replyingTo: reply.parent,
+        createdAt: reply.createdAt,
+        likes: reply._count.likes,
+        replies: reply._count.replies
+      };
+
       res.status(201).json({
         message: 'Resposta criada com sucesso',
-        reply
+        reply: response
       });
     } catch (error) {
       console.error('Erro ao criar resposta:', error);
@@ -145,7 +168,7 @@ export class TweetController {
         select: { followingId: true }
       });
 
-      const followingIds = following.map((f: { followingId: string }) => f.followingId);
+      const followingIds = following.map((f: { followingId: number }) => f.followingId);
       followingIds.push(userId); // Incluir tweets do próprio usuário
 
       // Buscar tweets do feed
@@ -159,8 +182,7 @@ export class TweetController {
             select: {
               id: true,
               name: true,
-              username: true,
-              profileImage: true
+              username: true
             }
           },
           likes: {
@@ -178,8 +200,7 @@ export class TweetController {
                 select: {
                   id: true,
                   name: true,
-                  username: true,
-                  profileImage: true
+                  username: true
                 }
               }
             },
@@ -204,9 +225,14 @@ export class TweetController {
 
       // Mapear tweets com informação se o usuário curtiu
       const tweetsWithLikeInfo = tweets.map((tweet: any) => ({
-        ...tweet,
-        isLikedByUser: tweet.likes.some((like: { userId: string }) => like.userId === userId),
-        likes: tweet.likes.length
+        id: tweet.id,
+        content: tweet.content,
+        author: tweet.author,
+        createdAt: tweet.createdAt,
+        likes: tweet._count.likes,
+        replies: tweet._count.replies,
+        isLikedByUser: tweet.likes.some((like: { userId: number }) => like.userId === userId),
+        recentReplies: tweet.replies
       }));
 
       res.json({
@@ -227,11 +253,18 @@ export class TweetController {
   static async likeTweet(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id: tweetId } = req.params;
+      const tweetIdInt = parseInt(tweetId, 10);
       const userId = req.userId!;
+
+      // Validação do ID
+      if (isNaN(tweetIdInt)) {
+        res.status(400).json({ error: 'ID do tweet inválido' });
+        return;
+      }
 
       // Verificar se o tweet existe
       const tweet = await prisma.tweet.findUnique({
-        where: { id: tweetId }
+        where: { id: tweetIdInt }
       });
 
       if (!tweet) {
@@ -244,7 +277,7 @@ export class TweetController {
         where: {
           userId_tweetId: {
             userId,
-            tweetId
+            tweetId: tweetIdInt
           }
         }
       });
@@ -258,11 +291,19 @@ export class TweetController {
       await prisma.like.create({
         data: {
           userId,
-          tweetId
+          tweetId: tweetIdInt
         }
       });
 
-      res.status(201).json({ message: 'Tweet curtido com sucesso' });
+      // Buscar contagem atualizada de likes
+      const likesCount = await prisma.like.count({
+        where: { tweetId: tweetIdInt }
+      });
+
+      res.status(201).json({ 
+        message: 'Tweet curtido com sucesso',
+        likesCount
+      });
     } catch (error) {
       console.error('Erro ao curtir tweet:', error);
       res.status(500).json({ error: 'Erro interno do servidor' });
@@ -273,14 +314,21 @@ export class TweetController {
   static async unlikeTweet(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id: tweetId } = req.params;
+      const tweetIdInt = parseInt(tweetId, 10);
       const userId = req.userId!;
+
+      // Validação do ID
+      if (isNaN(tweetIdInt)) {
+        res.status(400).json({ error: 'ID do tweet inválido' });
+        return;
+      }
 
       // Verificar se o like existe
       const existingLike = await prisma.like.findUnique({
         where: {
           userId_tweetId: {
             userId,
-            tweetId
+            tweetId: tweetIdInt
           }
         }
       });
@@ -295,12 +343,20 @@ export class TweetController {
         where: {
           userId_tweetId: {
             userId,
-            tweetId
+            tweetId: tweetIdInt
           }
         }
       });
 
-      res.json({ message: 'Like removido com sucesso' });
+      // Buscar contagem atualizada de likes
+      const likesCount = await prisma.like.count({
+        where: { tweetId: tweetIdInt }
+      });
+
+      res.json({ 
+        message: 'Like removido com sucesso',
+        likesCount
+      });
     } catch (error) {
       console.error('Erro ao remover like:', error);
       res.status(500).json({ error: 'Erro interno do servidor' });

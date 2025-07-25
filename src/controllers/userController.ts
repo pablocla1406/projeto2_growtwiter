@@ -7,42 +7,27 @@ export class UserController {
   static async getUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
+      const userId = parseInt(id, 10);
+
+      // Validação do ID
+      if (isNaN(userId)) {
+        res.status(400).json({ error: 'ID de usuário inválido' });
+        return;
+      }
 
       const user = await prisma.user.findUnique({
-        where: { id },
+        where: { id: userId },
         select: {
           id: true,
           name: true,
           username: true,
           email: true,
-          profileImage: true,
           createdAt: true,
           tweets: {
             select: {
               id: true,
               content: true,
               createdAt: true,
-              likes: {
-                select: {
-                  id: true,
-                  userId: true
-                }
-              },
-              replies: {
-                select: {
-                  id: true,
-                  content: true,
-                  createdAt: true,
-                  author: {
-                    select: {
-                      id: true,
-                      name: true,
-                      username: true,
-                      profileImage: true
-                    }
-                  }
-                }
-              },
               _count: {
                 select: {
                   likes: true,
@@ -60,8 +45,7 @@ export class UserController {
                 select: {
                   id: true,
                   name: true,
-                  username: true,
-                  profileImage: true
+                  username: true
                 }
               }
             }
@@ -72,8 +56,7 @@ export class UserController {
                 select: {
                   id: true,
                   name: true,
-                  username: true,
-                  profileImage: true
+                  username: true
                 }
               }
             }
@@ -110,17 +93,24 @@ export class UserController {
   static async followUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id: followingId } = req.params;
+      const followingUserId = parseInt(followingId, 10);
       const followerId = req.userId!;
 
+      // Validação do ID
+      if (isNaN(followingUserId)) {
+        res.status(400).json({ error: 'ID de usuário inválido' });
+        return;
+      }
+
       // Verificar se não está tentando seguir a si mesmo
-      if (followerId === followingId) {
+      if (followerId === followingUserId) {
         res.status(400).json({ error: 'Você não pode seguir a si mesmo' });
         return;
       }
 
       // Verificar se o usuário a ser seguido existe
       const userToFollow = await prisma.user.findUnique({
-        where: { id: followingId }
+        where: { id: followingUserId }
       });
 
       if (!userToFollow) {
@@ -133,7 +123,7 @@ export class UserController {
         where: {
           followerId_followingId: {
             followerId,
-            followingId
+            followingId: followingUserId
           }
         }
       });
@@ -147,7 +137,7 @@ export class UserController {
       await prisma.follow.create({
         data: {
           followerId,
-          followingId
+          followingId: followingUserId
         }
       });
 
@@ -162,14 +152,21 @@ export class UserController {
   static async unfollowUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id: followingId } = req.params;
+      const followingUserId = parseInt(followingId, 10);
       const followerId = req.userId!;
+
+      // Validação do ID
+      if (isNaN(followingUserId)) {
+        res.status(400).json({ error: 'ID de usuário inválido' });
+        return;
+      }
 
       // Verificar se o relacionamento existe
       const existingFollow = await prisma.follow.findUnique({
         where: {
           followerId_followingId: {
             followerId,
-            followingId
+            followingId: followingUserId
           }
         }
       });
@@ -184,7 +181,7 @@ export class UserController {
         where: {
           followerId_followingId: {
             followerId,
-            followingId
+            followingId: followingUserId
           }
         }
       });

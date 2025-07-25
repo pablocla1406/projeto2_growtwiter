@@ -3,7 +3,7 @@ import { AuthUtils } from '../utils/auth';
 import { prisma } from '../utils/prisma';
 
 export interface AuthenticatedRequest extends Request {
-  userId?: string;
+  userId?: number;
 }
 
 export const authenticateToken = async (

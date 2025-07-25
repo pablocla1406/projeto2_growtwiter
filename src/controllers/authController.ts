@@ -6,7 +6,7 @@ export class AuthController {
   // Cadastrar novo usuário
   static async register(req: Request, res: Response): Promise<void> {
     try {
-      const { name, username, email, password, profileImage } = req.body;
+      const { name, username, email, password } = req.body;
 
       // Validações básicas
       if (!name || !username || !email || !password) {
@@ -38,15 +38,13 @@ export class AuthController {
           name,
           username,
           email,
-          password: hashedPassword,
-          profileImage
+          password: hashedPassword
         },
         select: {
           id: true,
           name: true,
           username: true,
           email: true,
-          profileImage: true,
           createdAt: true
         }
       });
@@ -109,7 +107,6 @@ export class AuthController {
           name: user.name,
           username: user.username,
           email: user.email,
-          profileImage: user.profileImage,
           createdAt: user.createdAt
         },
         token
