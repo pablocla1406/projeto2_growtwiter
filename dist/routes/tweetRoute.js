@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_1 = require("../middlewares/auth");
+const tweetController_1 = require("../controllers/tweetController");
+const router = (0, express_1.Router)();
+router.use(auth_1.authenticateToken);
+router.post('/', tweetController_1.TweetController.createTweet);
+router.post('/:id/reply', tweetController_1.TweetController.createReply);
+router.get('/feed', tweetController_1.TweetController.getFeed);
+router.post('/:id/like', tweetController_1.TweetController.likeTweet);
+router.delete('/:id/like', tweetController_1.TweetController.unlikeTweet);
+exports.default = router;
