@@ -133,4 +133,33 @@ export class UserService {
       }
     });
   }
+
+  static async getAllUsers(): Promise<UserWithDetails[]> {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        email: true,
+        createdAt: true,
+        _count: {
+          select: {
+            tweets: true,
+            followers: true,
+            following: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    return users.map(user => ({
+      ...user,
+      tweets: [],
+      followers: [],
+      following: []
+    }));
+  }
 }

@@ -6,6 +6,8 @@ const router = Router();
 
 router.use(authenticateToken);
 
+router.get('/', UserController.getAllUsers);
+
 router.get('/:id', UserController.getUser);
 
 router.post('/:id/follow', UserController.followUser);

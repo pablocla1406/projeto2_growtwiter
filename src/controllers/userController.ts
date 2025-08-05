@@ -90,4 +90,14 @@ export class UserController {
       res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
+
+  static async getAllUsers(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const users = await UserService.getAllUsers();
+      res.json({ users });
+    } catch (error) {
+      console.error('Erro ao buscar usuários:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  }
 }
