@@ -1,4 +1,4 @@
-import { UserWithDetails } from "../interfaces/IUser";
+import { UserWithDetails, UserListItem } from "../interfaces/IUser";
 import { prisma } from "../utils/prisma";
 
 export class UserService {
@@ -134,7 +134,7 @@ export class UserService {
     });
   }
 
-  static async getAllUsers(): Promise<UserWithDetails[]> {
+  static async getAllUsers(): Promise<UserListItem[]> {
     const users = await prisma.user.findMany({
       select: {
         id: true,
@@ -155,11 +155,6 @@ export class UserService {
       }
     });
 
-    return users.map(user => ({
-      ...user,
-      tweets: [],
-      followers: [],
-      following: []
-    }));
+    return users;
   }
 }

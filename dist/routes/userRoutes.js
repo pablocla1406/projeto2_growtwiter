@@ -5,6 +5,7 @@ const userController_1 = require("../controllers/userController");
 const auth_1 = require("../middlewares/auth");
 const router = (0, express_1.Router)();
 router.use(auth_1.authenticateToken);
+router.get('/', userController_1.UserController.getAllUsers);
 router.get('/:id', userController_1.UserController.getUser);
 router.post('/:id/follow', userController_1.UserController.followUser);
 router.delete('/:id/follow', userController_1.UserController.unfollowUser);

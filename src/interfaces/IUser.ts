@@ -6,6 +6,18 @@ export interface UserResponse {
   createdAt: Date;
 }
 
+export interface UserListItem {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  createdAt: Date;
+  _count: {
+    tweets: number;
+    followers: number;
+    following: number;
+  };
+}
 
 export interface CreateUserData {
   name: string;
